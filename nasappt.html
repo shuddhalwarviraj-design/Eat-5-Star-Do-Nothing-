@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GALAXY MISSIONS — Official Mission Briefing & Game Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-deep: #03040b;
+      --cyan: #38bdf8;
+      --purple: #a855f7;
+      --amber: #f59e0b;
+      --emerald: #22c55e;
+      --rose: #f43f5e;
+      --glass: rgba(11, 16, 36, 0.58);
+      --glass-border: rgba(56, 189, 248, 0.25);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg-deep);
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      overflow-x: hidden;
+      background: transparent;
+    }
+
+    /* Fixed Full-Screen 3D Space Canvas */
+    #space-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Subtle Vignette & Scanline Atmosphere */
+    .atmosphere-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, transparent 45%, rgba(3, 4, 11, 0.72) 100%);
+    }
+
+    /* Top Telemetry Progress Header */
+    .telemetry-hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      background: linear-gradient(180deg, rgba(3, 4, 11, 0.9) 0%, rgba(3, 4, 11, 0) 100%);
+      backdrop-filter: blur(4px);
+    }
+
+    .hud-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      color: #fff;
+    }
+
+    .hud-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.6; }
+    }
+
+    .hud-nav {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .hud-nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      transition: color 0.25s, text-shadow 0.25s;
+    }
+
+    .hud-nav a:hover,
+    .hud-nav a.active {
+      color: var(--cyan);
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    }
+
+    .scroll-progress-track {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 60;
+    }
+
+    .scroll-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--purple), var(--amber));
+      box-shadow: 0 0 14px var(--cyan);
+    }
+
+    /* Side Altitude / Section Indicator */
+    .altitude-rail {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .rail-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      background: rgba(15, 23, 42, 0.6);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .rail-pip.active {
+      background: var(--cyan);
+      transform: scale(1.4);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    /* Main Scroll Sections */
+    main {
+      position: relative;
+      z-index: 10;
+    }
+
+    section {
+      min-height: 100vh;
+      padding: 110px 8vw 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .container {
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Typography & Section Headers */
+    .eyebrow {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 2px;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    h1.hero-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2.8rem, 7vw, 6.2rem);
+      font-weight: 900;
+      line-height: 1.04;
+      letter-spacing: 0.06em;
+      background: linear-gradient(120deg, #ffffff 15%, #38bdf8 55%, #c084fc 95%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.35));
+      margin-bottom: 22px;
+    }
+
+    h2.sec-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.9rem, 4vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #fff;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+
+    p.lead {
+      font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+      color: #cbd5e1;
+      max-width: 680px;
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+
+    /* 3D Tilt Glass Cards */
+    .tilt-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 28px;
+      transition: transform 0.25s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      transform-style: preserve-3d;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tilt-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .tilt-card:hover {
+      border-color: rgba(56, 189, 248, 0.65);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(56, 189, 248, 0.2);
+    }
+
+    /* Scroll Reveal Animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(42px) scale(0.97);
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Hero Badges & Scroll Cue */
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      color: #e0f2fe;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scroll-cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.16em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      animation: floatCue 2.2s ease-in-out infinite;
+    }
+
+    @keyframes floatCue {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(8px); }
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 22px;
+    }
+
+    /* Mission Cards */
+    .mission-orb {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #fff;
+    }
+
+    .card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .card-desc {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .spec-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 14px;
+      font-size: 0.86rem;
+      color: #94a3b8;
+    }
+
+    .spec-list li strong {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    /* Spacecraft Stat Bars */
+    .stat-row {
+      margin-top: 14px;
+    }
+
+    .stat-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      color: #e2e8f0;
+    }
+
+    .stat-bar-bg {
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+    }
+
+    /* Solar System 8-Planet Strip */
+    .planet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .planet-card {
+      background: rgba(10, 15, 35, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .planet-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--amber);
+    }
+
+    .planet-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .planet-sphere {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .planet-name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .planet-orbit {
+      font-size: 0.75rem;
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    /* Difficulty & Mechanics Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.92rem;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-table th {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    /* Trophy Grid */
+    .trophy-pill {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.68);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .trophy-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    /* Tech Stack Pills */
+    .tech-tag {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(168, 85, 247, 0.16);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.72rem;
+      color: #e9d5ff;
+      margin: 4px 4px 0 0;
+    }
+
+    @media (max-width: 768px) {
+      .hud-nav { display: none; }
+      .altitude-rail { right: 10px; }
+      section { padding: 95px 6vw 70px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Real-Time Interactive 3D Space Simulation Canvas -->
+  <canvas id="space-canvas"></canvas>
+  <div class="atmosphere-overlay"></div>
+
+  <!-- Top Scroll Telemetry Progress -->
+  <div class="scroll-progress-track">
+    <div class="scroll-progress-bar" id="progress-bar"></div>
+  </div>
+
+  <!-- Top HUD Navigation -->
+  <header class="telemetry-hud">
+    <div class="hud-brand">
+      <span class="hud-dot"></span>
+      <span>GALAXY MISSIONS // BRIEFING</span>
+    </div>
+    <nav class="hud-nav">
+      <a href="#sec-hero" class="active">01 OVERVIEW</a>
+      <a href="#sec-missions">02 MISSIONS</a>
+      <a href="#sec-fleet">03 SPACECRAFT</a>
+      <a href="#sec-solar">04 SOLAR SYSTEM</a>
+      <a href="#sec-physics">05 DIFFICULTY & CONTROLS</a>
+      <a href="#sec-trophies">06 TROPHIES</a>
+      <a href="#sec-arch">07 3D ENGINE</a>
+    </nav>
+  </header>
+
+  <!-- Right Side Scroll Navigation Pips -->
+  <div class="altitude-rail" id="rail">
+    <div class="rail-pip active" data-target="#sec-hero" title="Overview"></div>
+    <div class="rail-pip" data-target="#sec-missions" title="4 Core Missions"></div>
+    <div class="rail-pip" data-target="#sec-fleet" title="Spacecraft Fleet"></div>
+    <div class="rail-pip" data-target="#sec-solar" title="Solar System Explorer"></div>
+    <div class="rail-pip" data-target="#sec-physics" title="Difficulty & Controls"></div>
+    <div class="rail-pip" data-target="#sec-trophies" title="Trophies & Scoring"></div>
+    <div class="rail-pip" data-target="#sec-arch" title="3D Technical Architecture"></div>
+  </div>
+
+  <main>
+    <!-- SECTION 1: HERO & EXECUTIVE MISSION OVERVIEW -->
+    <section id="sec-hero">
+      <div class="container reveal">
+        <div class="eyebrow">NASA-INSPIRED 3D WEBGL SPACE SIMULATION</div>
+        <h1 class="hero-title">GALAXY<br>MISSIONS</h1>
+        <p class="lead">
+          Four high-stakes orbital missions across one dynamic 3D galaxy. Pilot custom spacecraft through asteroid storms, execute precision lunar landings, chart all eight planets of our solar system, and harvest deep-space energy crystals.
+        </p>
+
+        <div class="hero-badges">
+          <div class="badge"><i class="fa-solid fa-rocket"></i> 4 DISTINCT GAME MODES</div>
+          <div class="badge"><i class="fa-solid fa-shuttle-space"></i> 3 PLAYABLE SPACECRAFT</div>
+          <div class="badge"><i class="fa-solid fa-globe"></i> 8 INTERACTIVE PLANETS</div>
+          <div class="badge"><i class="fa-solid fa-trophy"></i> 6 UNLOCKABLE ACHIEVEMENTS</div>
+          <div class="badge"><i class="fa-solid fa-wave-square"></i> PROCEDURAL WEB AUDIO</div>
+        </div>
+
+        <div class="scroll-cue">
+          <i class="fa-solid fa-angles-down"></i>
+          <span>Scroll down to pilot camera through deep space</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: THE FOUR CORE MISSIONS -->
+    <section id="sec-missions">
+      <div class="container reveal">
+        <div class="eyebrow">FLIGHT OPERATIONS // 02</div>
+        <h2 class="sec-title">FOUR CORE SPACE MISSIONS</h2>
+        <p class="lead">
+          Every mission tests a distinct piloting discipline—combining evasive reflexes, Newtonian thrust physics, planetary navigation, and risk-reward resource collection.
+        </p>
+
+        <div class="grid-4">
+          <!-- Mission 1 -->
+          <div class="tilt-card">
+            <div class="mission-orb" style="background: radial-gradient(circle at 30% 30%, #cbd5e1, #475569); box-shadow: 0 0 24px rgba(148,163,184,0.45);">
+              <i class="fa-solid fa-meteor"></i>
+            </div>
+            <div class="card-title">1. ASTEROID DODGE</div>
+            <p class="card-desc">
+              Survive a relentless 60-second rock storm in deep space as asteroid velocity and spawn density escalate over time.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Objective:</strong> Survive full 60.0s timer</li>
+              <li><strong>Scoring:</strong> +10 pts/sec + 3 pts per dodged rock</li>
+              <li><strong>Defense:</strong> Hull shields + 1.5s post-hit invulnerability</li>
+            </ul>
+          </div>
+
+          <!-- Mission 2 -->
+          <div class="tilt-card">
+            <div class="mission-orb" style="background: radial-gradient(circle at 30% 30%, #e5e7eb, #6b7280); box-shadow: 0 0 24px rgba(34,197,94,0.45);">
+              <i class="fa-solid fa-moon"></i>
+            </div>
+            <div class="card-title">2. MOON LANDING</div>
+            <p class="card-desc">
+              Control descent angle, rotational attitude, and main engine burn to touch down softly on the illuminated green landing pad.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Gravity:</strong> Constant -2.2 m/s² lunar pull</li>
+              <li><strong>Touchdown:</strong> Upright tilt (&lt; 0.35 rad) &amp; safe speed</li>
+              <li><strong>Scoring:</strong> Fuel remaining × 8 + soft-landing bonus</li>
+            </ul>
+          </div>
+
+          <!-- Mission 3 -->
+          <div class="tilt-card">
+            <div class="mission-orb" style="background: radial-gradient(circle at 30% 30%, #fbbf24, #b45309); box-shadow: 0 0 24px rgba(251,191,36,0.5);">
+              <i class="fa-solid fa-sun"></i>
+            </div>
+            <div class="card-title">3. GALAXY EXPLORER</div>
+            <p class="card-desc">
+              Free-roam 3D flight across an orbiting solar system. Approach all 8 planets to unlock real NASA-style planetary facts.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Sub-Missions:</strong> Inner Planets, Gas Giants, Ice Giants</li>
+              <li><strong>Scoring:</strong> +100 pts/planet + 300 pts/sector bonus</li>
+              <li><strong>Propulsion:</strong> Variable thrust + Shift afterburner boost</li>
+            </ul>
+          </div>
+
+          <!-- Mission 4 -->
+          <div class="tilt-card">
+            <div class="mission-orb" style="background: radial-gradient(circle at 30% 30%, #67e8f9, #7c3aed); box-shadow: 0 0 24px rgba(103,232,249,0.5);">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+            <div class="card-title">4. SPACE COLLECTOR</div>
+            <p class="card-desc">
+              Harvest glowing cyan energy crystals while weaving past volatile red proximity mines in a 45-second high-speed run.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Goal:</strong> Score 100+ points within 45.0s</li>
+              <li><strong>Crystals:</strong> +10 points per cyan octahedron</li>
+              <li><strong>Hazards:</strong> Red dodecahedron mines strip hull shield</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: SPACECRAFT FLEET -->
+    <section id="sec-fleet">
+      <div class="container reveal">
+        <div class="eyebrow">HANGAR BAY // 03</div>
+        <h2 class="sec-title">THREE CUSTOM 3D SPACECRAFT</h2>
+        <p class="lead">
+          Pilots select from three procedurally modeled 3D starships—each engineered with distinct thrust-to-weight agility and structural hull armor multipliers.
+        </p>
+
+        <div class="grid-3">
+          <!-- Ship 1: FALCON -->
+          <div class="tilt-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <span class="card-title" style="color:#38bdf8; margin:0;">01 // FALCON</span>
+              <i class="fa-solid fa-jet-fighter-up" style="color:#38bdf8; font-size:1.5rem;"></i>
+            </div>
+            <p class="card-desc">
+              Balanced multi-role interceptor featuring a sleek conical fuselage and swept delta wings. Ideal for all-around mission versatility.
+            </p>
+            <div class="stat-row">
+              <div class="stat-label"><span>THRUST SPEED (1.0x)</span><span>70%</span></div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:70%; background:linear-gradient(90deg,#0284c7,#38bdf8);"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label"><span>HULL ARMOR (1.0x)</span><span>60%</span></div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:60%; background:linear-gradient(90deg,#0284c7,#38bdf8);"></div></div>
+            </div>
+          </div>
+
+          <!-- Ship 2: NOVA -->
+          <div class="tilt-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <span class="card-title" style="color:#c084fc; margin:0;">02 // NOVA</span>
+              <i class="fa-solid fa-bolt" style="color:#c084fc; font-size:1.5rem;"></i>
+            </div>
+            <p class="card-desc">
+              High-velocity experimental racer equipped with an elongated core and electromagnetic ring stabilizer. Built for rapid crystal runs and exploration.
+            </p>
+            <div class="stat-row">
+              <div class="stat-label"><span>THRUST SPEED (1.2x)</span><span>84%</span></div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:84%; background:linear-gradient(90deg,#7e22ce,#c084fc);"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label"><span>HULL ARMOR (0.8x)</span><span>48%</span></div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:48%; background:linear-gradient(90deg,#7e22ce,#c084fc);"></div></div>
+            </div>
+          </div>
+
+          <!-- Ship 3: TITAN -->
+          <div class="tilt-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <span class="card-title" style="color:#fbbf24; margin:0;">03 // TITAN</span>
+              <i class="fa-solid fa-shield-halved" style="color:#fbbf24; font-size:1.5rem;"></i>
+            </div>
+            <p class="card-desc">
+              Heavy-duty armored cruiser reinforced with twin side thruster pods. Engineered to absorb extra impacts in dense asteroid fields.
+            </p>
+            <div class="stat-row">
+              <div class="stat-label"><span>THRUST SPEED (0.85x)</span><span>60%</span></div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:60%; background:linear-gradient(90deg,#b45309,#fbbf24);"></div></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-label"><span>HULL ARMOR (1.4x)</span><span>84%</span></div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:84%; background:linear-gradient(90deg,#b45309,#fbbf24);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: INTERACTIVE SOLAR SYSTEM & PLANETARY DATABASE -->
+    <section id="sec-solar">
+      <div class="container reveal">
+        <div class="eyebrow">ASTROPHYSICS &amp; EDUCATION // 04</div>
+        <h2 class="sec-title">8-PLANET SOLAR SYSTEM DATABASE</h2>
+        <p class="lead">
+          In <strong>Galaxy Explorer</strong>, players navigate real orbital rings around a glowing central Sun. Approaching any world triggers live telemetry cards with authentic astronomical facts.
+        </p>
+
+        <div class="planet-grid">
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#a8a29e,#57534e);"></div>
+              <div><div class="planet-name">1. MERCURY</div><div class="planet-orbit">ORBIT RADIUS: 40 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">Smallest planet in the solar system. One full solar year lasts just 88 Earth days.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#fbbf24,#b45309);"></div>
+              <div><div class="planet-name">2. VENUS</div><div class="planet-orbit">ORBIT RADIUS: 62 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">Hottest planet (~465°C), shrouded in dense, heat-trapping sulfuric acid clouds.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#38bdf8,#15803d);"></div>
+              <div><div class="planet-name">3. EARTH</div><div class="planet-orbit">ORBIT RADIUS: 86 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">Our home world: the only known astronomical body harboring life and liquid surface oceans.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#f97316,#9a3412);"></div>
+              <div><div class="planet-name">4. MARS</div><div class="planet-orbit">ORBIT RADIUS: 110 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">The Red Planet, home to Olympus Mons—the tallest known planetary volcano.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#fed7aa,#9a3412);"></div>
+              <div><div class="planet-name">5. JUPITER</div><div class="planet-orbit">ORBIT RADIUS: 165 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">Largest gas giant. Its iconic Great Red Spot anticyclonic storm has raged for over 150 years.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#fde68a,#a16207); box-shadow: 0 0 0 3px rgba(253,230,138,0.3);"></div>
+              <div><div class="planet-name">6. SATURN</div><div class="planet-orbit">ORBIT RADIUS: 220 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">Adorned with a custom 3D icy ring system spanning roughly 280,000 kilometers across.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#bae6fd,#0284c7);"></div>
+              <div><div class="planet-name">7. URANUS</div><div class="planet-orbit">ORBIT RADIUS: 270 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">An extreme ice giant with a 98-degree axial tilt that effectively rolls on its side.</p>
+          </div>
+
+          <div class="planet-card">
+            <div class="planet-header">
+              <div class="planet-sphere" style="background:radial-gradient(circle at 30% 30%,#60a5fa,#1e3a8a);"></div>
+              <div><div class="planet-name">8. NEPTUNE</div><div class="planet-orbit">ORBIT RADIUS: 320 AU-SCALE</div></div>
+            </div>
+            <p class="card-desc" style="margin:0; font-size:0.86rem;">The windiest world in the solar system, lashed by supersonic storms exceeding 2,000 km/h.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: DIFFICULTY SCALING & MULTI-PLATFORM CONTROLS -->
+    <section id="sec-physics">
+      <div class="container reveal">
+        <div class="eyebrow">FLIGHT DYNAMICS // 05</div>
+        <h2 class="sec-title">DIFFICULTY TIERS &amp; CONTROLS</h2>
+        <p class="lead">
+          Engineered for seamless play across desktop workstations and mobile touchscreens with dynamic physics scaling across three difficulty levels.
+        </p>
+
+        <div class="grid-2">
+          <!-- Difficulty Matrix -->
+          <div class="tilt-card">
+            <div class="card-title"><i class="fa-solid fa-gauge-high" style="color:var(--cyan); margin-right:8px;"></i> DIFFICULTY SCALING MATRIX</div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>PARAMETER</th>
+                  <th>EASY (0.7x)</th>
+                  <th>MEDIUM (1.0x)</th>
+                  <th>HARD (1.4x)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Hazard Speed &amp; Spawn</strong></td>
+                  <td>0.7× Velocity</td>
+                  <td>1.0× Standard</td>
+                  <td>1.4× High-Density</td>
+                </tr>
+                <tr>
+                  <td><strong>Moon Landing Max Speed</strong></td>
+                  <td>≤ 4.5 m/s</td>
+                  <td>≤ 3.5 m/s</td>
+                  <td>≤ 2.5 m/s</td>
+                </tr>
+                <tr>
+                  <td><strong>Fuel Burn Rate</strong></td>
+                  <td>9.8 units/sec</td>
+                  <td>14.0 units/sec</td>
+                  <td>19.6 units/sec</td>
+                </tr>
+                <tr>
+                  <td><strong>Planet Scan Proximity</strong></td>
+                  <td>14.0 unit radius</td>
+                  <td>9.0 unit radius</td>
+                  <td>6.0 unit radius</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Controls & UX -->
+          <div class="tilt-card">
+            <div class="card-title"><i class="fa-solid fa-gamepad" style="color:var(--purple); margin-right:8px;"></i> MULTI-DEVICE FLIGHT CONTROLS</div>
+            <p class="card-desc">
+              Responsive input listeners automatically adapt between physical keyboards and coarse-pointer mobile touchpads.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Desktop Flight:</strong> Arrow Keys or W / A / S / D for 3-axis steering, pitch, and strafing</li>
+              <li><strong>Main Thruster &amp; Boost:</strong> Hold <code style="color:#38bdf8;">SPACE</code> to fire engines; <code style="color:#c084fc;">SHIFT</code> engages 150-unit hyper-boost</li>
+              <li><strong>Touchscreen Cockpit:</strong> On-screen directional D-Pad + dedicated circular <code style="color:#a855f7;">THRUST</code> button</li>
+              <li><strong>System Hotkeys:</strong> <code style="color:#fbbf24;">P / ESC</code> for instant pause modal; <code style="color:#22c55e;">M</code> toggles procedural audio mute</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: TROPHIES, PROGRESSION & LEADERBOARDS -->
+    <section id="sec-trophies">
+      <div class="container reveal">
+        <div class="eyebrow">PILOT CAREER // 06</div>
+        <h2 class="sec-title">TROPHIES &amp; GLOBAL LEADERBOARDS</h2>
+        <p class="lead">
+          Persistent progress tracking monitors mission completion percentage (0%–100%), pilot callsigns, local high scores, and cloud leaderboard rankings.
+        </p>
+
+        <div class="grid-3">
+          <div class="trophy-pill">
+            <div class="trophy-icon"><i class="fa-solid fa-paper-plane"></i></div>
+            <div>
+              <div class="card-title" style="font-size:0.95rem; margin-bottom:2px;">FIRST FLIGHT</div>
+              <div style="font-size:0.84rem; color:#94a3b8;">Launch into your very first space mission.</div>
+            </div>
+          </div>
+
+          <div class="trophy-pill">
+            <div class="trophy-icon"><i class="fa-solid fa-meteor"></i></div>
+            <div>
+              <div class="card-title" style="font-size:0.95rem; margin-bottom:2px;">ASTEROID SURVIVOR</div>
+              <div style="font-size:0.84rem; color:#94a3b8;">Endure 60 seconds in Asteroid Dodge.</div>
+            </div>
+          </div>
+
+          <div class="trophy-pill">
+            <div class="trophy-icon"><i class="fa-solid fa-flag-checkered"></i></div>
+            <div>
+              <div class="card-title" style="font-size:0.95rem; margin-bottom:2px;">SOFT LANDING</div>
+              <div style="font-size:0.84rem; color:#94a3b8;">Touch down safely on the lunar pad.</div>
+            </div>
+          </div>
+
+          <div class="trophy-pill">
+            <div class="trophy-icon"><i class="fa-solid fa-compass"></i></div>
+            <div>
+              <div class="card-title" style="font-size:0.95rem; margin-bottom:2px;">COSMIC EXPLORER</div>
+              <div style="font-size:0.84rem; color:#94a3b8;">Visit and scan all 8 solar system planets.</div>
+            </div>
+          </div>
+
+          <div class="trophy-pill">
+            <div class="trophy-icon"><i class="fa-solid fa-gem"></i></div>
+            <div>
+              <div class="card-title" style="font-size:0.95rem; margin-bottom:2px;">CRYSTAL HUNTER (150+)</div>
+              <div style="font-size:0.84rem; color:#94a3b8;">Score 150 or more points in Space Collector.</div>
+            </div>
+          </div>
+
+          <div class="trophy-pill">
+            <div class="trophy-icon"><i class="fa-solid fa-crown"></i></div>
+            <div>
+              <div class="card-title" style="font-size:0.95rem; margin-bottom:2px;">HARD MODE HERO</div>
+              <div style="font-size:0.84rem; color:#94a3b8;">Complete any mission on Hard (1.4x) difficulty.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: 3D GRAPHICS & PROCEDURAL AUDIO ARCHITECTURE -->
+    <section id="sec-arch">
+      <div class="container reveal">
+        <div class="eyebrow">UNDER THE HOOD // 07</div>
+        <h2 class="sec-title">ZERO-ASSET 3D &amp; AUDIO ENGINE</h2>
+        <p class="lead">
+          Built as a self-contained single-file WebGL application—every planet texture, nebula glow, 3D spacecraft hull, and sci-fi synthesizer sound is generated procedurally in real time.
+        </p>
+
+        <div class="grid-3">
+          <div class="tilt-card">
+            <div class="card-title"><i class="fa-solid fa-cubes" style="color:var(--cyan); margin-right:8px;"></i> THREE.JS WEBGL ENGINE</div>
+            <p class="card-desc">
+              Hardware-accelerated 3D rendering using Three.js r128 with dynamic camera interpolation, additive sprite nebulae, and 2,200+ starfield particles.
+            </p>
+            <div>
+              <span class="tech-tag">THREE.WebGLRenderer</span>
+              <span class="tech-tag">PerspectiveCamera</span>
+              <span class="tech-tag">AdditiveBlending</span>
+            </div>
+          </div>
+
+          <div class="tilt-card">
+            <div class="card-title"><i class="fa-solid fa-palette" style="color:var(--amber); margin-right:8px;"></i> PROCEDURAL TEXTURES</div>
+            <p class="card-desc">
+              Offscreen HTML5 2D canvases synthesize banded planetary surfaces and radial atmospheric glow maps at runtime with zero external image downloads.
+            </p>
+            <div>
+              <span class="tech-tag">CanvasTexture</span>
+              <span class="tech-tag">MeshStandardMaterial</span>
+              <span class="tech-tag">FlatShading</span>
+            </div>
+          </div>
+
+          <div class="tilt-card">
+            <div class="card-title"><i class="fa-solid fa-volume-high" style="color:var(--purple); margin-right:8px;"></i> WEB AUDIO SYNTHESIZER</div>
+            <p class="card-desc">
+              Real-time oscillators and exponential gain envelopes generate ambient cosmic chords, crystal chimes, thruster rumble, and victory fanfares.
+            </p>
+            <div>
+              <span class="tech-tag">AudioContext</span>
+              <span class="tech-tag">OscillatorNode</span>
+              <span class="tech-tag">LocalStorage + Cloud DB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Three.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    /* =========================================================================
+       1. REALISTIC 3D SPACE BACKGROUND ENGINE (SCROLL-REACTIVE THREE.JS)
+       ========================================================================= */
+    const canvas = document.getElementById('space-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x03040b, 0.0014);
+
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, 2, 26);
+
+    // Procedural Glow & Planet Textures (matching the game's craft)
+    function createGlowTexture(rgbaColor) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 128;
+      const ctx = c.getContext('2d');
+      const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, rgbaColor);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 128);
+      return new THREE.CanvasTexture(c);
+    }
+
+    function createPlanetTexture(baseHex, bandHex) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = baseHex;
+      ctx.fillRect(0, 0, 512, 256);
+      for (let i = 0; i < 360; i++) {
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = Math.random() < 0.55 ? bandHex : '#050816';
+        ctx.beginPath();
+        ctx.ellipse(Math.random() * 512, Math.random() * 256, 16 + Math.random() * 65, 2 + Math.random() * 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return new THREE.CanvasTexture(c);
+    }
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x4f6099, 0.85));
+    const sunLight = new THREE.PointLight(0xfff1d6, 2.4, 900);
+    sunLight.position.set(-45, 28, -40);
+    scene.add(sunLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.9);
+    rimLight.position.set(30, -20, 40);
+    scene.add(rimLight);
+
+    // Deep Starfield (3,200 stars)
+    const starCount = 3200;
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPos[i] = (Math.random() - 0.5) * 900;
+      starPos[i + 1] = (Math.random() - 0.5) * 900;
+      starPos[i + 2] = (Math.random() - 0.5) * 900;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starField = new THREE.Points(
+      starGeo,
+      new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, sizeAttenuation: true, transparent: true, opacity: 0.9 })
+    );
+    scene.add(starField);
+
+    // Volumetric Nebula Glow Clouds
+    const nebulaeData = [
+      { color: 'rgba(56, 189, 248, 0.28)', pos: [-60, 25, -140], scale: 220 },
+      { color: 'rgba(168, 85, 247, 0.26)', pos: [70, -30, -220], scale: 260 },
+      { color: 'rgba(245, 158, 11, 0.20)', pos: [-40, -15, -340], scale: 240 },
+      { color: 'rgba(34, 197, 94, 0.18)', pos: [50, 35, -450], scale: 250 }
+    ];
+    nebulaeData.forEach(n => {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: createGlowTexture(n.color),
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        })
+      );
+      sprite.position.set(...n.pos);
+      sprite.scale.set(n.scale, n.scale, 1);
+      scene.add(sprite);
+    });
+
+    // Hero Planet (Earth/Exoplanet) + Orbital Satellite
+    const heroPlanet = new THREE.Mesh(
+      new THREE.SphereGeometry(11, 48, 36),
+      new THREE.MeshStandardMaterial({
+        map: createPlanetTexture('#1d4ed8', '#22d3ee'),
+        roughness: 0.78,
+        metalness: 0.1
+      })
+    );
+    heroPlanet.position.set(16, -2, -18);
+    const planetAtmo = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: createGlowTexture('rgba(56, 189, 248, 0.55)'),
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    planetAtmo.scale.set(36, 36, 1);
+    heroPlanet.add(planetAtmo);
+    scene.add(heroPlanet);
+
+    // Ringed Gas Giant deeper along the scroll path
+    const saturnGroup = new THREE.Group();
+    const saturnMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(14, 48, 36),
+      new THREE.MeshStandardMaterial({
+        map: createPlanetTexture('#d97706', '#fde68a'),
+        roughness: 0.85
+      })
+    );
+    const saturnRing = new THREE.Mesh(
+      new THREE.RingGeometry(18, 29, 64),
+      new THREE.MeshBasicMaterial({
+        color: 0xe3c98a,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.65
+      })
+    );
+    saturnRing.rotation.x = Math.PI / 2.4;
+    saturnGroup.add(saturnMesh, saturnRing);
+    saturnGroup.position.set(-28, 8, -165);
+    scene.add(saturnGroup);
+
+    // Sun Core deeper along the scroll path
+    const sunMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(18, 36, 28),
+      new THREE.MeshBasicMaterial({ color: 0xffaa22 })
+    );
+    const sunHalo = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: createGlowTexture('rgba(255, 180, 60, 0.75)'),
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    sunHalo.scale.set(95, 95, 1);
+    sunMesh.add(sunHalo);
+    sunMesh.position.set(36, 14, -310);
+    scene.add(sunMesh);
+
+    // Detailed 3D Hero Spacecraft (Escorts the viewer down the scroll)
+    const shipGroup = new THREE.Group();
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      metalness: 0.82,
+      roughness: 0.25,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.25
+    });
+    const wingMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.7,
+      roughness: 0.4
+    });
+
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.85, 4.2, 16), hullMat);
+    nose.rotation.x = -Math.PI / 2;
+    const wings = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.14, 1.6), wingMat);
+    wings.position.z = 0.8;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.1, 10, 32), hullMat);
+    ring.position.z = 0.6;
+    const thrusterFlame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.45, 2.2, 12),
+      new THREE.MeshBasicMaterial({ color: 0x67e8f9 })
+    );
+    thrusterFlame.rotation.x = Math.PI / 2;
+    thrusterFlame.position.z = 2.9;
+
+    shipGroup.add(nose, wings, ring, thrusterFlame);
+    shipGroup.position.set(-7, -1, 10);
+    scene.add(shipGroup);
+
+    // Floating 3D Asteroids & Energy Crystals along the Z-corridor
+    const asteroids = [];
+    const astGeo = new THREE.IcosahedronGeometry(1, 1);
+    const astMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.95, flatShading: true });
+    for (let i = 0; i < 48; i++) {
+      const mesh = new THREE.Mesh(astGeo, astMat);
+      const scale = 0.4 + Math.random() * 1.6;
+      mesh.scale.set(scale, scale * (0.7 + Math.random() * 0.5), scale);
+      mesh.position.set(
+        (Math.random() - 0.5) * 90,
+        (Math.random() - 0.5) * 55,
+        20 - Math.random() * 420
+      );
+      scene.add(mesh);
+      asteroids.push({
+        mesh,
+        rx: (Math.random() - 0.5) * 0.8,
+        ry: (Math.random() - 0.5) * 0.8
+      });
+    }
+
+    const crystals = [];
+    const crysGeo = new THREE.OctahedronGeometry(0.9);
+    const crysMat = new THREE.MeshStandardMaterial({
+      color: 0x22d3ee,
+      emissive: 0x06b6d4,
+      emissiveIntensity: 1.2,
+      roughness: 0.2
+    });
+    for (let i = 0; i < 22; i++) {
+      const mesh = new THREE.Mesh(crysGeo, crysMat);
+      mesh.position.set(
+        (Math.random() - 0.5) * 65,
+        (Math.random() - 0.5) * 40,
+        -10 - Math.random() * 380
+      );
+      scene.add(mesh);
+      crystals.push(mesh);
+    }
+
+    /* =========================================================================
+       2. SCROLL TELEMETRY, CAMERA FLIGHT PATH & UI INTERACTIONS
+       ========================================================================= */
+    let scrollProgress = 0;
+    let targetScroll = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    const progressBar = document.getElementById('progress-bar');
+    const sections = Array.from(document.querySelectorAll('section'));
+    const navLinks = Array.from(document.querySelectorAll('.hud-nav a'));
+    const pips = Array.from(document.querySelectorAll('.rail-pip'));
+
+    function updateScrollState() {
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      targetScroll = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      progressBar.style.width = (targetScroll * 100).toFixed(2) + '%';
+
+      // Highlight active section in HUD & right rail
+      let currentIdx = 0;
+      sections.forEach((sec, idx) => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= window.innerHeight * 0.45) {
+          currentIdx = idx;
+        }
+      });
+
+      navLinks.forEach((a, idx) => a.classList.toggle('active', idx === currentIdx));
+      pips.forEach((pip, idx) => pip.classList.toggle('active', idx === currentIdx));
+    }
+
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+    updateScrollState();
+
+    // Rail Pip Click Navigation
+    pips.forEach(pip => {
+      pip.addEventListener('click', () => {
+        const target = document.querySelector(pip.dataset.target);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // Intersection Observer for Section Reveal Animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.14 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // 3D Perspective Tilt Effect on Cards
+    document.querySelectorAll('.tilt-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = `perspective(900px) rotateY(${x * 9}deg) rotateX(${-y * 9}deg) translateZ(10px)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg) translateZ(0px)';
+      });
+    });
+
+    // Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    /* =========================================================================
+       3. REAL-TIME ANIMATION LOOP (CAMERA JOURNEY THROUGH DEEP SPACE)
+       ========================================================================= */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.getElapsedTime();
+
+      // Smoothly interpolate scroll position for cinematic camera flight
+      scrollProgress += (targetScroll - scrollProgress) * Math.min(1, dt * 5);
+
+      // Fly camera deeper along Z-axis as user scrolls down the presentation
+      const camZ = 26 - scrollProgress * 310;
+      const camX = Math.sin(scrollProgress * Math.PI * 2) * 8 + mouseX * 2.5;
+      const camY = 2 + Math.cos(scrollProgress * Math.PI * 1.5) * 4 - mouseY * 1.8;
+
+      camera.position.set(camX, camY, camZ);
+      camera.lookAt(
+        Math.sin(scrollProgress * Math.PI * 2) * 3,
+        Math.cos(scrollProgress * Math.PI) * 1.5,
+        camZ - 35
+      );
+
+      // Escort Spacecraft flies dynamically alongside the camera
+      const shipTargetX = camX + Math.cos(scrollProgress * Math.PI * 2) * 7.5;
+      const shipTargetY = camY - 1.4 + Math.sin(elapsed * 2) * 0.35;
+      const shipTargetZ = camZ - 14;
+
+      shipGroup.position.lerp(new THREE.Vector3(shipTargetX, shipTargetY, shipTargetZ), Math.min(1, dt * 6));
+      shipGroup.rotation.z = Math.sin(elapsed * 1.2) * 0.18 - mouseX * 0.25;
+      shipGroup.rotation.y = Math.cos(scrollProgress * Math.PI * 2) * 0.35;
+      shipGroup.rotation.x = mouseY * 0.15;
+      thrusterFlame.scale.y = 0.75 + Math.random() * 0.55;
+
+      // Rotate Celestial Bodies
+      heroPlanet.rotation.y += dt * 0.08;
+      saturnMesh.rotation.y += dt * 0.06;
+      saturnRing.rotation.z += dt * 0.02;
+      sunMesh.rotation.y -= dt * 0.04;
+      starField.rotation.z += dt * 0.004;
+
+      // Spin Asteroids & Crystals
+      for (let i = 0; i < asteroids.length; i++) {
+        const a = asteroids[i];
+        a.mesh.rotation.x += a.rx * dt;
+        a.mesh.rotation.y += a.ry * dt;
+      }
+      for (let i = 0; i < crystals.length; i++) {
+        crystals[i].rotation.y += dt * 1.4;
+        crystals[i].rotation.x += dt * 0.7;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
+```
+
+I have created an interactive, scroll-driven 3D space presentation (`galaxy_missions_presentation.html`) covering all aspects of **Galaxy Missions**, including the 4 game modes, 3 customizable spacecraft, all 8 solar system planets, difficulty scaling, controls, achievements, and procedural WebGL/Web Audio architecture. Let me know if you'd like any adjustments!
